@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conformity-Based Terrain Gen</title>
+
+    <style>
+        button:hover {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+
+        <h1><strike>Conformity</strike> Based Procedural Generation</h1>
+        <i>haha get the joke right uhh</i>
+        <div id="grid" style="display: flex; flex-direction: column;"></div>
+        <h2>Cool Settings!</h2>
+
+        Chaos Factor: <input type="number" id="chaos" min="5" max="8" value="5"> (5 - 8 recommended)
+        <br><br>
+        Size: <input type="number" id="size"  min="10" max="100" value="75"> (25 - 100 recommended)
+        <br><br>
+        Iterations: <input type="number" id="iterations" value="15"> (you're gonna set this to 10000000 and get try to get hypnotized on chaos factor 3 aren't ya don't lie to me)
+        <br><br>
+
+        The following option will remove all limits on number inputs, dangerous and not recommended unless you want your
+        final moments to be <a href="https://www.youtube.com/watch?v=iq1yX1IH2V8" target="_blank">this</a>.
+        <br><br>
+        <button id="noLimits">NO LIMITS!</button>
+
+    </div>
+
+
+
+<script>
+    const sizeInput = document.getElementById("size")
+    const chaosInput = document.getElementById("chaos")
+    const iterations = document.getElementById("iterations")
+    const grid = document.getElementById("grid")
+    const noLimitsBtn = document.getElementById("noLimits")
+
+    let cells = []
+    let currentIteration = 0
+    let maxIterations = 0
+    let intervalId = null
+
+    function generateGrid() {
+        grid.innerHTML = ""
+        cells = []
+
+        let size = parseInt(sizeInput.value)
+
+        for (let y = 0; y < size; y++) {
+            let row = document.createElement("div")
+            row.style.display = "flex"
+            let rowCells = []
+
+            for (let x = 0; x < size; x++) {
+                let cell = document.createElement("div")
+                cell.style.width = "5px"
+                cell.style.height = "5px"
+                cell.style.backgroundColor = Math.random() > 0.5 ? "blue" : "rgb(0, 255, 0)"
+                row.appendChild(cell)
+                rowCells.push(cell)
+            }
+
+            grid.appendChild(row)
+            cells.push(rowCells)
+        }
+    }
+
+    function getNeighbors(x, y) {
+        let countLand = 0
+        let countSea = 0
+        let size = parseInt(sizeInput.value)
+
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dy === 0) continue
+                let nx = x + dx
+                let ny = y + dy
+                if (nx >= 0 && nx < size && ny >= 0 && ny < size) {
+                    let color = cells[ny][nx].style.backgroundColor
+                    if (color === "rgb(0, 255, 0)") countLand++
+                    if (color === "blue") countSea++
+                }
+            }
+        }
+
+        return { countLand, countSea }
+    }
+
+    function iterate() {
+        let newStates = []
+        let size = parseInt(sizeInput.value)
+        let chaos = parseInt(chaosInput.value)
+
+        for (let y = 0; y < size; y++) {
+            let rowStates = []
+            for (let x = 0; x < size; x++) {
+                let current = cells[y][x].style.backgroundColor
+                let { countLand, countSea } = getNeighbors(x, y)
+                if (current === "rgb(0, 255, 0)" && countSea >= chaos) {
+                    rowStates.push("blue")
+                } else if (current === "blue" && countLand >= chaos) {
+                    rowStates.push("rgb(0, 255, 0)")
+                } else {
+                    rowStates.push(current)
+                }
+            }
+            newStates.push(rowStates)
+        }
+
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                cells[y][x].style.backgroundColor = newStates[y][x]
+            }
+        }
+
+        currentIteration++
+        maxIterations = parseInt(iterations.value)
+
+        if (currentIteration >= maxIterations) {
+            clearInterval(intervalId)
+            intervalId = null
+        }
+    }
+
+    function runSimulation() {
+        if (intervalId) clearInterval(intervalId)
+        currentIteration = 0
+        maxIterations = parseInt(iterations.value)
+
+        intervalId = setInterval(() => {
+            if (currentIteration < maxIterations) {
+                iterate()
+            } else {
+                clearInterval(intervalId)
+                intervalId = null
+            }
+        }, 100)
+    }
+
+    function regenerate() {
+        if (intervalId) clearInterval(intervalId)
+        generateGrid()
+        runSimulation()
+    }
+
+    sizeInput.addEventListener("change", regenerate)
+    chaosInput.addEventListener("change", regenerate)
+    iterations.addEventListener("change", () => {
+        maxIterations = parseInt(iterations.value)
+    })
+
+    noLimitsBtn.addEventListener("click", () => {
+        sizeInput.removeAttribute("min")
+        sizeInput.removeAttribute("max")
+        chaosInput.removeAttribute("min")
+        chaosInput.removeAttribute("max")
+    })
+
+    regenerate()
+</script>
+
+</body>
+
+</html>
